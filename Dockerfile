@@ -1,4 +1,4 @@
-FROM alpine:3.5
+FROM alpine:3.3
 MAINTAINER Amon Libanio <amon.libanio@gmail.com>
 
 ENV NGINX_VERSION 1.12.1
@@ -35,7 +35,7 @@ RUN cd /tmp/nginx-${NGINX_VERSION} && make && make install
 
 # ffmpeg dependencies.
 RUN apk add --update nasm yasm-dev lame-dev libogg-dev x264-dev libvpx-dev libvorbis-dev x265-dev freetype-dev libass-dev libwebp-dev rtmpdump-dev libtheora-dev opus-dev
-RUN echo http://dl-4.alpinelinux.org/alpine/edge/testing/ >> /etc/apk/repositories
+RUN echo http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories
 RUN apk add --update fdk-aac-dev
 
 # Get ffmpeg source.
