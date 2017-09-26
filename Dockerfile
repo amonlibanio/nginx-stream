@@ -6,7 +6,7 @@ ENV NGINX_RTMP_VERSION 1.2.0
 ENV FFMPEG_VERSION 3.3.4
 
 EXPOSE 1935
-EXPOSE 8080
+EXPOSE 80
 
 RUN mkdir -p /opt/data && mkdir /www
 
