@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.5
 MAINTAINER Amon Libanio <amon.libanio@gmail.com>
 
 ENV NGINX_VERSION 1.12.1
