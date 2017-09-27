@@ -1,14 +1,14 @@
-FROM alpine:3.6
+FROM alpine:3.4
 MAINTAINER Soma Szélpál <szelpalsoma@gmail.com>
 
-ENV NGINX_VERSION 1.13.5
+ENV NGINX_VERSION 1.13.3
 ENV NGINX_DEVEL_KIT_VERSION=0.3.0
 ENV NGINX_RTMP_MODULE_VERSION 1.2.0
-ENV NGINX_LUA_MODULE_VERSION=0.10.10
+ENV NGINX_LUA_MODULE_VERSION=0.10.8
 ENV LUAJIT_VERSION=2.0.5
-ENV FFMPEG_VERSION 3.3.4
-ENV LUAROCKS_VERSION 2.4.3
-ENV OPENRESTY_VERSION 1.11.2.5
+ENV FFMPEG_VERSION 3.3.3
+ENV LUAROCKS_VERSION 2.4.2
+ENV OPENRESTY_VERSION 1.11.2.3
 
 ENV NGINX_DEVEL_KIT ngx_devel_kit-${NGINX_DEVEL_KIT_VERSION}
 ENV NGINX_RTMP_MODULE nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}
@@ -108,11 +108,8 @@ RUN cd /tmp/nginx-${NGINX_VERSION} \
   --conf-path=/opt/nginx/nginx.conf \
   --error-log-path=/opt/nginx/logs/error.log \
   --http-log-path=/opt/nginx/logs/access.log \
-        --with-http_ssl_module \
-        --with-http_flv_module \
-        --with-http_auth_request_module \
-        --with-file-aio \
-        --with-debug 
+  --with-debug \
+  --with-http_auth_request_module
 RUN cd /tmp/nginx-${NGINX_VERSION} && make && make install
 
 # ffmpeg dependencies.
