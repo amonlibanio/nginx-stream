@@ -1,76 +1,66 @@
-FROM alpine:3.4
+FROM alpine:3.6
+
 MAINTAINER Amon Libanio <amon.libanio@gmail.com>
 
-ENV NGINX_VERSION 1.12.1
+# set up nginx and nginx-rtmp-module versions
+ENV NGINX_VERSION 1.13.3
 ENV NGINX_RTMP_VERSION 1.2.0
-ENV FFMPEG_VERSION 3.3.4
 
-EXPOSE 1935
-EXPOSE 80
+# create required directories
+RUN mkdir /src /data /static
 
-RUN mkdir -p /opt/data && mkdir /www
+# install base nginx dependencies openssl-dev pcre-dev zlib-dev wget build-base
+RUN apk --update add openssl-dev pcre-dev zlib-dev wget build-base
 
-RUN	apk update && apk add	\
-  gcc	binutils-libs binutils build-base	libgcc make pkgconf pkgconfig \
-  openssl openssl-dev ca-certificates pcre \
-  musl-dev libc-dev pcre-dev zlib-dev
-
-# Get nginx source.
-RUN cd /tmp && wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
+# set /src as current directory
+WORKDIR /src
+# get nginx source
+RUN set -x \ 
+  && wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz \
   && tar zxf nginx-${NGINX_VERSION}.tar.gz \
-  && rm nginx-${NGINX_VERSION}.tar.gz
+  && rm nginx-${NGINX_VERSION}.tar.gz \
+# get nginx-rtmp module source
+  && wget --no-check-certificate https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_VERSION}.tar.gz \
+  && tar zxf v${NGINX_RTMP_VERSION}.tar.gz \
+  && rm v${NGINX_RTMP_VERSION}.tar.gz
 
-# Get nginx-rtmp module.
-RUN cd /tmp && wget https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_VERSION}.tar.gz \
-  && tar zxf v${NGINX_RTMP_VERSION}.tar.gz && rm v${NGINX_RTMP_VERSION}.tar.gz
-
-# Compile nginx with nginx-rtmp module.
-RUN cd /tmp/nginx-${NGINX_VERSION} \
+# compile nginx with rtmp module
+WORKDIR /src/nginx-${NGINX_VERSION}
+RUN set -x \
   && ./configure \
-  --prefix=/opt/nginx \
-  --add-module=/tmp/nginx-rtmp-module-${NGINX_RTMP_VERSION} \
-  --conf-path=/opt/nginx/nginx.conf --error-log-path=/opt/nginx/logs/error.log --http-log-path=/opt/nginx/logs/access.log \
-  --with-debug
-RUN cd /tmp/nginx-${NGINX_VERSION} && make && make install
+# add modules to build with
+        --with-http_ssl_module \
+        --with-http_gzip_static_module \
+        --with-http_stub_status_module \
+        --add-module=/src/nginx-rtmp-module-${NGINX_RTMP_VERSION} \
+# set up base path for nginx installation and logs
+        --prefix=/etc/nginx \
+        --http-log-path=/var/log/nginx/access.log \
+        --error-log-path=/var/log/nginx/error.log \
+        --sbin-path=/usr/local/sbin/nginx \
+  && make \
+  && make install \
+# clean up after build
+  && apk del build-base \
+  && rm -rf /tmp/src \
+  && rm -rf /var/cache/apk/*
 
-# ffmpeg dependencies.
-RUN apk add --update nasm yasm-dev lame-dev libogg-dev x264-dev libvpx-dev libvorbis-dev x265-dev freetype-dev libass-dev libwebp-dev rtmpdump-dev libtheora-dev opus-dev
-RUN echo http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories
-RUN apk add --update fdk-aac-dev
+# forward request and error logs to docker log collector
+RUN ln -sf /dev/stdout /var/log/nginx/access.log
+RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
-# Get ffmpeg source.
-RUN cd /tmp/ && wget http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz \
-  && tar zxf ffmpeg-${FFMPEG_VERSION}.tar.gz && rm ffmpeg-${FFMPEG_VERSION}.tar.gz
+# install nginx config 
+COPY nginx.conf /etc/nginx/conf/nginx.conf
+# add stat.xsl for rtmp module
+COPY static/* /static/
 
-# Compile ffmpeg.
-RUN cd /tmp/ffmpeg-${FFMPEG_VERSION} && \
-  ./configure \
-  --enable-version3 \
-  --enable-gpl \
-  --enable-nonfree \
-  --enable-small \
-  --enable-libmp3lame \
-  --enable-libx264 \
-  --enable-libx265 \
-  --enable-libvpx \
-  --enable-libtheora \
-  --enable-libvorbis \
-  --enable-libopus \
-  --enable-libfdk-aac \
-  --enable-libass \
-  --enable-libwebp \
-  --enable-librtmp \
-  --enable-postproc \
-  --enable-avresample \
-  --enable-libfreetype \
-  --enable-openssl \
-  --disable-debug \
-  && make && make install && make distclean
+VOLUME ["/var/log/nginx"]
+VOLUME ["/data"]
 
-# Cleanup.
-RUN rm -rf /var/cache/* /tmp/*
+WORKDIR /etc/nginx
 
-ADD nginx.conf /opt/nginx/nginx.conf
-ADD static /www/static
+EXPOSE 8080
+EXPOSE 433
+EXPOSE 1935
 
-CMD ["/opt/nginx/sbin/nginx"]
+CMD ["nginx", "-g", "daemon off;"]
