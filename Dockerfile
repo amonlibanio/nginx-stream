@@ -1,7 +1,7 @@
-FROM alpine:3.4
-MAINTAINER Soma Szélpál <szelpalsoma@gmail.com>
+FROM alpine:3.6
+MAINTAINER Amon Libanio <amon.libanio@gmail.com>
 
-ENV NGINX_VERSION 1.13.3
+ENV NGINX_VERSION 1.13.5
 ENV NGINX_DEVEL_KIT_VERSION=0.3.0
 ENV NGINX_RTMP_MODULE_VERSION 1.2.0
 ENV NGINX_LUA_MODULE_VERSION=0.10.8
@@ -82,7 +82,7 @@ RUN cd /tmp \
 
 # Get nginx-rtmp module.
 RUN cd /tmp \
-  && wget https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz -O ${NGINX_RTMP_MODULE}.tar.gz \
+  && wget https://github.com/ut0mt8/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz -O ${NGINX_RTMP_MODULE}.tar.gz \
   && tar zxf ${NGINX_RTMP_MODULE}.tar.gz \
   && rm ${NGINX_RTMP_MODULE}.tar.gz
 
@@ -108,6 +108,7 @@ RUN cd /tmp/nginx-${NGINX_VERSION} \
   --conf-path=/opt/nginx/nginx.conf \
   --error-log-path=/opt/nginx/logs/error.log \
   --http-log-path=/opt/nginx/logs/access.log \
+  --with-http_ssl_module \
   --with-debug \
   --with-http_auth_request_module
 RUN cd /tmp/nginx-${NGINX_VERSION} && make && make install
